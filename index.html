@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <title>AromaLab</title>
+  <meta name="theme-color" content="#1b1108">
+  <meta name="description" content="AromaLab — Estúdio de Perfumaria Técnica">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- iOS: comportamento de app em tela cheia -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AromaLab">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #0b0806; overflow: hidden; }
+    #frame {
+      position: fixed; inset: 0; width: 100%; height: 100%; border: 0;
+      /* respeita as áreas seguras (notch / barra do sistema) */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      background: #0b0806;
+    }
+    #splash {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+      background: radial-gradient(800px 400px at 70% -10%, #1c130a 0%, #0b0806 60%);
+      color: #a08e76; font-family: Georgia, 'Times New Roman', serif;
+      transition: opacity .45s ease;
+    }
+    #splash.hide { opacity: 0; pointer-events: none; }
+    #splash .frasco { font-size: 56px; animation: flutua 1.6s ease-in-out infinite; }
+    #splash .marca { font-size: 30px; color: #e0b878; letter-spacing: 1px; }
+    #splash .leg { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; }
+    @keyframes flutua { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+  </style>
+</head>
+<body>
+  <!-- Tela de abertura enquanto o app carrega -->
+  <div id="splash">
+    <span class="frasco">⚗️</span>
+    <span class="marca">AromaLab</span>
+    <span class="leg">Estúdio de Perfumaria</span>
+  </div>
+
+  <!-- O AromaLab roda aqui dentro, ocupando a tela inteira -->
+  <iframe id="frame"
+          title="AromaLab"
+          allow="clipboard-read; clipboard-write; camera"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+
+  <script>
+    /* =======================================================================
+     *  CONFIGURAÇÃO — cole aqui a URL /exec da sua implantação do Apps Script.
+     *  (Implantar → Gerenciar implantações → copie a URL terminada em /exec)
+     * ======================================================================= */
+    var APP_URL = 'https://script.google.com/macros/s/AKfycby4FyC6HgHM4tQsL7aXC9rcm5n9ClgEe8d9AQ6H0hRQICQJDGNlJMrHp9TbycrQsCvJ/exec';
+
+    (function () {
+      var frame = document.getElementById('frame');
+      var splash = document.getElementById('splash');
+
+      if (!APP_URL || APP_URL.indexOf('COLE_AQUI') === 0) {
+        splash.innerHTML = '<div style="text-align:center;max-width:320px;padding:24px;font-family:sans-serif">' +
+          '<div style="font-size:42px">⚙️</div>' +
+          '<p style="color:#e0b878;font-size:18px;margin:12px 0 6px">Falta configurar</p>' +
+          '<p style="font-size:13px;line-height:1.6">Edite o arquivo <b>index.html</b> e cole a URL <b>/exec</b> ' +
+          'do seu Apps Script na variável <code>APP_URL</code>.</p></div>';
+        return;
+      }
+
+      frame.addEventListener('load', function () { splash.classList.add('hide'); });
+      frame.src = APP_URL;
+
+      // registra o service worker (necessário para instalar como app)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('sw.js').catch(function () {});
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
