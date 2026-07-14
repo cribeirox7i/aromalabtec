@@ -3,7 +3,7 @@
  * Nunca intercepta /api/* (chamadas dinâmicas ao proxy) - essas sempre
  * precisam ir direto pro servidor, nunca servidas do cache.
  */
-const CACHE = 'aromalab-app-v3';
+const CACHE = 'aromalab-app-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -12,7 +12,8 @@ const ASSETS = [
   './manifest.webmanifest',
   './icon.svg',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './logo.png'
 ];
 
 self.addEventListener('install', function (e) {

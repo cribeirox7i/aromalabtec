@@ -342,7 +342,9 @@ const S = {
   prodPagina: 1,
   fornPagina: 1,
   dashCarregado: false,
-  producaoCarregada: false
+  producaoCarregada: false,
+  formulasCarregadas: false,
+  fornecedoresCarregados: false
 };
 
 (function () {
@@ -510,7 +512,8 @@ function entrarNoApp() {
 function encerrarSessaoLocal() {
   S.token = ''; S.user = null;
   S.formulas = []; S.producao = []; S.fornecedores = []; S.dashCarregado = false;
-  S.producaoCarregada = false; S.glossario = null;
+  S.producaoCarregada = false; S.formulasCarregadas = false; S.fornecedoresCarregados = false;
+  S.glossario = null;
   localStorage.removeItem('aromalab_token');
   aplicarTema(3);
   $('appShell').classList.add('hidden');
@@ -841,10 +844,10 @@ function det(rotulo, valor) {
  *  FÓRMULAS — listagem
  * =========================================================== */
 function carregarFormulas() {
-  if (S.formulas.length) { renderFormulas(); return; }
+  if (S.formulasCarregadas) { renderFormulas(); return; }
   carregando(true);
   api('formulas.listar').then(function (lista) {
-    S.formulas = lista; carregando(false); renderFormulas();
+    S.formulas = lista; S.formulasCarregadas = true; carregando(false); renderFormulas();
   }).catch(function (e) { carregando(false); toast(e.message, 'erro'); });
 }
 
@@ -895,7 +898,7 @@ function duplicarFormula(formId) {
 function executarDuplicacao(formId) {
   fecharModal(); carregando(true);
   api('formulas.duplicar', { form_id: formId, sufixo: t('sufixo_copia') })
-    .then(function () { carregando(false); toast(t('msg_duplicada')); S.formulas = []; S.dashCarregado = false; carregarFormulas(); })
+    .then(function () { carregando(false); toast(t('msg_duplicada')); S.formulas = []; S.formulasCarregadas = false; S.dashCarregado = false; carregarFormulas(); })
     .catch(function (e) { carregando(false); toast(e.message, 'erro'); });
 }
 
@@ -914,7 +917,7 @@ function confirmarExclusaoFormula(formId) {
 function excluirFormula(formId) {
   fecharModal(); carregando(true);
   api('formulas.excluir', { form_id: formId })
-    .then(function () { carregando(false); toast(t('msg_excluida')); S.formulas = []; S.dashCarregado = false; carregarFormulas(); })
+    .then(function () { carregando(false); toast(t('msg_excluida')); S.formulas = []; S.formulasCarregadas = false; S.dashCarregado = false; carregarFormulas(); })
     .catch(function (e) { carregando(false); toast(e.message, 'erro'); });
 }
 
@@ -968,6 +971,7 @@ function salvarFormula() {
       S.formulaAtual.form_nome = nome;
     }
     S.formulas = [];
+    S.formulasCarregadas = false;
     S.dashCarregado = false;
   }).catch(function (e) { carregando(false); toast(e.message, 'erro'); });
 }
@@ -1307,10 +1311,10 @@ function excluirProducao(prodId) {
  *  FORNECEDORES
  * =========================================================== */
 function carregarFornecedores() {
-  if (S.fornecedores.length) { renderFornecedores(); return; }
+  if (S.fornecedoresCarregados) { renderFornecedores(); return; }
   carregando(true);
   api('fornecedores.listar').then(function (lista) {
-    S.fornecedores = lista; carregando(false); renderFornecedores();
+    S.fornecedores = lista; S.fornecedoresCarregados = true; carregando(false); renderFornecedores();
   }).catch(function (e) { carregando(false); toast(e.message, 'erro'); });
 }
 
@@ -1403,7 +1407,7 @@ function salvarFornecedor(fornId) {
   };
   fecharModal(); carregando(true);
   api('fornecedores.salvar', payload)
-    .then(function () { carregando(false); toast(t('msg_fornecedor_salvo')); S.fornecedores = []; S.dashCarregado = false; carregarFornecedores(); })
+    .then(function () { carregando(false); toast(t('msg_fornecedor_salvo')); S.fornecedores = []; S.fornecedoresCarregados = false; S.dashCarregado = false; carregarFornecedores(); })
     .catch(function (e) { carregando(false); toast(e.message, 'erro'); });
 }
 
@@ -1422,7 +1426,7 @@ function confirmarExclusaoFornecedor(fornId) {
 function excluirFornecedor(fornId) {
   fecharModal(); carregando(true);
   api('fornecedores.excluir', { forn_id: fornId })
-    .then(function () { carregando(false); toast(t('msg_fornecedor_excluido')); S.fornecedores = []; S.dashCarregado = false; carregarFornecedores(); })
+    .then(function () { carregando(false); toast(t('msg_fornecedor_excluido')); S.fornecedores = []; S.fornecedoresCarregados = false; S.dashCarregado = false; carregarFornecedores(); })
     .catch(function (e) { carregando(false); toast(e.message, 'erro'); });
 }
 
@@ -1726,12 +1730,14 @@ function renderPaginacaoPublica() {
 const PUB_FORM = {
   pagina: 1, total: 0, paginas: 1, formulas: [],
   ids: { lista: 'pubListaFormulas', paginacao: 'pubFormulasPaginacao', busca: 'pubBuscaFormula', filtro: 'pubFiltroTipoFormula', detalheBox: 'pubFormulaDetalheConteudo' },
-  fnAbrir: 'abrirDetalheFormulaPublica', fnPagina: 'irPagFormulasPublicas'
+  fnAbrir: 'abrirDetalheFormulaPublica', fnPagina: 'irPagFormulasPublicas',
+  _hoverTimer: null, _hoverToken: 0
 };
 const FORM_GERAL = {
   pagina: 1, total: 0, paginas: 1, formulas: [],
   ids: { lista: 'listaFormulasGerais', paginacao: 'formGeraisPaginacao', busca: 'buscaFormulaGeral', filtro: 'filtroTipoFormulaGeral', detalheBox: 'formGeralDetalheConteudo' },
-  fnAbrir: 'abrirDetalheFormulaGeralLog', fnPagina: 'irPagFormulasGerais'
+  fnAbrir: 'abrirDetalheFormulaGeralLog', fnPagina: 'irPagFormulasGerais',
+  _hoverTimer: null, _hoverToken: 0
 };
 
 function _carregarFormulasGeral(ctx, pagina) {
@@ -1739,7 +1745,7 @@ function _carregarFormulasGeral(ctx, pagina) {
   var busca = ($(ctx.ids.busca) && $(ctx.ids.busca).value) || '';
   var tipo  = ($(ctx.ids.filtro) && $(ctx.ids.filtro).value) || '';
   var lista = $(ctx.ids.lista);
-  if (lista) lista.innerHTML = '<p class="vazio">' + t('carregando') + '</p>';
+  if (lista) lista.innerHTML = '<div class="loading-inline"><svg class="icone-svg" viewBox="0 0 512 512"><use href="#sym-frasco"/></svg><p data-i18n="carregando">' + t('carregando') + '</p></div>';
   var box = $(ctx.ids.detalheBox);
   if (box) { box.classList.add('pub-detalhe-vazio'); box.innerHTML = '<span class="pub-detalhe-hint">' + t('pub_hint_click_formula') + '</span>'; }
 
@@ -1763,7 +1769,7 @@ function _renderListaFormulasGeral(ctx) {
     return;
   }
   lista.innerHTML = ctx.formulas.map(function (f) {
-    return '<div class="pub-ins-item" onclick="' + ctx.fnAbrir + '(' + f.form_id + ')">' +
+    return '<div class="pub-ins-item" onmouseenter="' + ctx.fnAbrir + '(' + f.form_id + ')" onclick="' + ctx.fnAbrir + '(' + f.form_id + ')">' +
       '<div class="pub-ins-thumb-placeholder">🧪</div>' +
       '<div class="pub-ins-info">' +
         '<div class="pub-ins-linha-topo">' +
@@ -1808,18 +1814,40 @@ function _htmlTabelaItensFormula(tbodyId, tfootId) {
   '</table></div>';
 }
 
+// Chamado a cada onmouseenter/onclick do item - aplica um pequeno "delay de
+// intenção" antes de buscar a composição no servidor, pra hover não disparar
+// uma requisição a cada item que o mouse atravessa no caminho até o alvo.
 function _abrirDetalheFormulaGeral(ctx, formId) {
+  clearTimeout(ctx._hoverTimer);
+  ctx._hoverTimer = setTimeout(function () { _abrirDetalheFormulaGeralAgora(ctx, formId); }, 180);
+}
+
+function _abrirDetalheFormulaGeralAgora(ctx, formId) {
   const f = ctx.formulas.filter(function (x) { return String(x.form_id) === String(formId); })[0];
   if (!f) return;
-  carregando(true);
+
+  document.querySelectorAll('#' + ctx.ids.lista + ' .pub-ins-item').forEach(function (el) { el.classList.remove('selecionado'); });
+  document.querySelectorAll('#' + ctx.ids.lista + ' .pub-ins-item').forEach(function (el) {
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('(' + formId + ')') >= 0) el.classList.add('selecionado');
+  });
+
+  // No mobile o painel lateral fica escondido (vira modal só ao concluir),
+  // então o spinner de tela cheia continua sendo o feedback visível ali.
+  // No desktop o painel já está visível - o spinner pequeno entra nele.
+  const mobile = window.matchMedia('(max-width:720px)').matches;
+  const box = $(ctx.ids.detalheBox);
+  if (mobile) {
+    carregando(true);
+  } else if (box) {
+    box.classList.remove('pub-detalhe-vazio');
+    box.innerHTML = '<div class="loading-inline"><svg class="icone-svg" viewBox="0 0 512 512"><use href="#sym-frasco"/></svg><p data-i18n="carregando">' + t('carregando') + '</p></div>';
+  }
+
+  const token = ++ctx._hoverToken;
   api('itens.publico', { form_id: formId })
     .then(function (itens) {
-      carregando(false);
-
-      document.querySelectorAll('#' + ctx.ids.lista + ' .pub-ins-item').forEach(function (el) { el.classList.remove('selecionado'); });
-      document.querySelectorAll('#' + ctx.ids.lista + ' .pub-ins-item').forEach(function (el) {
-        if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('(' + formId + ')') >= 0) el.classList.add('selecionado');
-      });
+      if (mobile) carregando(false);
+      if (token !== ctx._hoverToken) return; // resposta obsoleta - usuário já passou pra outro item
 
       var tbodyId = ctx.ids.detalheBox + '_tbody', tfootId = ctx.ids.detalheBox + '_tfoot';
       var html = '<div class="pub-detalhe-corpo">' +
@@ -1831,7 +1859,11 @@ function _abrirDetalheFormulaGeral(ctx, formId) {
       exibirDetalheCatalogo(ctx.ids.detalheBox, html);
       montarLinhasItens(itens, tbodyId, tfootId, false);
     })
-    .catch(function (e) { carregando(false); toast(e.message, 'erro'); });
+    .catch(function (e) {
+      if (mobile) carregando(false);
+      if (token !== ctx._hoverToken) return;
+      toast(e.message, 'erro');
+    });
 }
 
 var _buscarFormPublicaDebounce = null;
